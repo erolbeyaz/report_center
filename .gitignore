@@ -1,0 +1,19 @@
+# Python
+backend/.venv/
+__pycache__/
+*.pyc
+
+# Node
+frontend/node_modules/
+frontend/dist/
+
+# Yerel veri: veritabanı, üretilen Excel'ler, sertifikalar
+data/
+*.xlsx
+
+# Editör
+.vscode/
+.idea/
+
+# Docker ile yerel deneme
+/secrets/

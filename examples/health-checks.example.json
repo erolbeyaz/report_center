@@ -1,0 +1,127 @@
+{
+  "_doc": "Rapor Merkezi Ana Sayfa sağlık kontrolleri örneği. RM_HEALTH_CHECKS_FILE ile verilir. Ayrıntı: README 'Ana Sayfa sağlık kontrolleri'.",
+  "prometheus": "Prometheus",
+  "scope_label": "cluster",
+  "scopes": {
+    "prod": {
+      "scope": "Prod Cluster",
+      "key": "prod"
+    },
+    "test": {
+      "scope": "Test Cluster",
+      "key": "test"
+    }
+  },
+  "checks": [
+    {
+      "id": "alerts",
+      "query": "max by (cluster, alertname, severity) (count_over_time(ALERTS{alertstate=\"firing\",severity=~\"critical|warning\"}[24h:5m])) * 5 / 60",
+      "item": {
+        "title": "{alertname} alarmı",
+        "level": {
+          "label": "severity",
+          "map": {
+            "critical": "Kritik",
+            "warning": "Uyarı"
+          }
+        },
+        "value": "hours",
+        "report": "{key}-metrik-alarm-gecmisi"
+      },
+      "fact": {
+        "label": "Kritik alarm (24 sa)",
+        "agg": "count",
+        "where": {
+          "severity": "critical"
+        }
+      }
+    },
+    {
+      "id": "backup",
+      "query": "(time() - max by (cluster, schedule) (velero_backup_last_successful_timestamp{schedule!=\"\"})) / 3600",
+      "item": {
+        "when": {
+          "op": ">",
+          "value": 26
+        },
+        "title": "Velero yedeği gecikti: {schedule}",
+        "level": "Kritik",
+        "value": "hours",
+        "report": "{key}-metrik-yedek-yasi"
+      },
+      "fact": {
+        "label": "Son başarılı yedek",
+        "agg": "min",
+        "format": "ago_hours"
+      }
+    },
+    {
+      "id": "oom",
+      "query": "sum by (cluster, namespace, container) ((max_over_time(kube_pod_container_status_last_terminated_reason{reason=\"OOMKilled\"}[24h]) == 1) * on (cluster, namespace, pod, container) group_left increase(kube_pod_container_status_restarts_total[24h])) > 0",
+      "item": {
+        "title": "{container} bellek yetersizliğinden yeniden başladı (OOMKilled) · {namespace}",
+        "level": "Uyarı",
+        "value": "count",
+        "report": "{key}-metrik-oom",
+        "unit": "kez"
+      }
+    },
+    {
+      "id": "elasticsearch",
+      "query": "max by (cluster) (count_over_time((elasticsearch_cluster_health_status{color!=\"green\"} == 1)[24h:5m])) * 5 / 60 > 0",
+      "item": {
+        "title": "Elasticsearch cluster durumu green değil",
+        "level": "Uyarı",
+        "value": "hours",
+        "report": "{key}-metrik-es-saglik"
+      }
+    },
+    {
+      "id": "disk",
+      "query": "max by (cluster, instance, mountpoint) (100 - 100 * node_filesystem_avail_bytes{fstype!~\"tmpfs|overlay|squashfs|nsfs\"} / node_filesystem_size_bytes{fstype!~\"tmpfs|overlay|squashfs|nsfs\"}) > 75",
+      "item": {
+        "title": "{mountpoint} disk doluluğu · {instance}",
+        "level": {
+          "warning": 75,
+          "critical": 90
+        },
+        "value": "percent",
+        "report": "{key}-metrik-disk-doluluk"
+      }
+    },
+    {
+      "id": "audit-volume",
+      "type": "report_count",
+      "report": "{key}-k8s-audit",
+      "window_hours": 24,
+      "item": {
+        "when": {
+          "op": "<",
+          "value": 1
+        },
+        "title": "Kubernetes audit kaydı gelmiyor",
+        "level": "Bilgi",
+        "value": "count",
+        "report": "{key}-k8s-audit",
+        "unit": "kayıt"
+      },
+      "fact": {
+        "label": "Audit kaydı (24 sa)"
+      }
+    },
+    {
+      "id": "last-delete",
+      "type": "report_last",
+      "report": "{key}-k8s-silme",
+      "window_days": 30,
+      "fields": [
+        "username",
+        "resource"
+      ],
+      "fact": {
+        "label": "Son silme",
+        "empty": "son 30 günde yok"
+      }
+    }
+  ]
+}

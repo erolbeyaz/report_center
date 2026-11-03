@@ -1,0 +1,1083 @@
+{
+  "format": 1,
+  "datasources": [
+    {
+      "name": "Prometheus",
+      "type": "prometheus",
+      "config": {
+        "url": "https://prometheus.example.com",
+        "ca_file": "ca.crt"
+      }
+    },
+    {
+      "name": "Elasticsearch",
+      "type": "elasticsearch",
+      "config": {
+        "url": "https://elasticsearch.example.com:9200",
+        "ca_file": "ca.crt",
+        "cred_file": "es-cred"
+      }
+    }
+  ],
+  "scopes": [
+    {
+      "name": "Prod Cluster",
+      "kind": "kubernetes",
+      "description": "Örnek ortam"
+    }
+  ],
+  "templates": [
+    {
+      "slug": "prod-metrik-alarm-gecmisi",
+      "name": "Alarm Geçmişi (saatlik)",
+      "scope": "Prod Cluster",
+      "group": "Metrikler · Alarmlar",
+      "definition": {
+        "description": "Saat içinde tetiklenmiş (firing) warning ve critical alarmlar: alarm adı, önem, namespace ve aynı anda kaç örnek.",
+        "dataset": "count by (alertname, severity, namespace) (ALERTS{cluster=\"prod\",alertstate=\"firing\",severity=~\"warning|critical\"})",
+        "time_field": "@timestamp",
+        "fixed_filters": [],
+        "params": [],
+        "columns": [
+          {
+            "field": "@timestamp",
+            "label": "Saat (yerel saat)",
+            "width": 18,
+            "format": "datetime"
+          },
+          {
+            "field": "alertname",
+            "label": "Alarm",
+            "width": 32,
+            "format": "text"
+          },
+          {
+            "field": "severity",
+            "label": "Önem",
+            "width": 10,
+            "format": "text"
+          },
+          {
+            "field": "namespace",
+            "label": "Namespace",
+            "width": 18,
+            "format": "text"
+          },
+          {
+            "field": "value",
+            "label": "Örnek sayısı",
+            "width": 10,
+            "format": "text"
+          }
+        ],
+        "row_rules": [],
+        "sort": [
+          {
+            "field": "@timestamp",
+            "dir": "asc"
+          }
+        ],
+        "meta": {
+          "title": "Alarm Geçmişi (saatlik) – Prod Cluster",
+          "scope": "Prod Cluster · Prometheus · cluster=\"prod\"",
+          "notes": [
+            [
+              "Kaynak",
+              "Prometheus · cluster=\"prod\""
+            ],
+            [
+              "Zaman",
+              "Her satır adım sonundaki değerdir; günlük raporlarda değer o tarihten önceki 24 saati, saatlik raporlarda önceki 1 saati kapsar."
+            ]
+          ]
+        },
+        "step": "1h",
+        "datasource": "Prometheus"
+      }
+    },
+    {
+      "slug": "prod-metrik-ns-bellek",
+      "name": "Namespace Bellek Kullanımı (günlük ortalama, GiB)",
+      "scope": "Prod Cluster",
+      "group": "Metrikler · Kapasite",
+      "definition": {
+        "description": "Her namespace'in gün içindeki ortalama bellek kullanımı (working set, GiB).",
+        "dataset": "sum by (namespace) (avg_over_time(container_memory_working_set_bytes{cluster=\"prod\",container!=\"\",image!=\"\"}[1d])) / 1073741824",
+        "time_field": "@timestamp",
+        "fixed_filters": [],
+        "params": [],
+        "columns": [
+          {
+            "field": "@timestamp",
+            "label": "Gün (yerel saat)",
+            "width": 18,
+            "format": "datetime"
+          },
+          {
+            "field": "namespace",
+            "label": "Namespace",
+            "width": 24,
+            "format": "text"
+          },
+          {
+            "field": "value",
+            "label": "Bellek (GiB)",
+            "width": 12,
+            "format": "text"
+          }
+        ],
+        "row_rules": [],
+        "sort": [
+          {
+            "field": "@timestamp",
+            "dir": "asc"
+          },
+          {
+            "field": "value",
+            "dir": "desc"
+          }
+        ],
+        "meta": {
+          "title": "Namespace Bellek Kullanımı (günlük ortalama, GiB) – Prod Cluster",
+          "scope": "Prod Cluster · Prometheus · cluster=\"prod\"",
+          "notes": [
+            [
+              "Kaynak",
+              "Prometheus · cluster=\"prod\""
+            ],
+            [
+              "Zaman",
+              "Her satır adım sonundaki değerdir; günlük raporlarda değer o tarihten önceki 24 saati, saatlik raporlarda önceki 1 saati kapsar."
+            ]
+          ]
+        },
+        "step": "1d",
+        "datasource": "Prometheus"
+      }
+    },
+    {
+      "slug": "prod-metrik-ns-cpu",
+      "name": "Namespace CPU Kullanımı (günlük ortalama, çekirdek)",
+      "scope": "Prod Cluster",
+      "group": "Metrikler · Kapasite",
+      "definition": {
+        "description": "Her namespace'in gün içindeki ortalama CPU kullanımı (çekirdek sayısı).",
+        "dataset": "sum by (namespace) (rate(container_cpu_usage_seconds_total{cluster=\"prod\",container!=\"\",image!=\"\"}[1d]))",
+        "time_field": "@timestamp",
+        "fixed_filters": [],
+        "params": [],
+        "columns": [
+          {
+            "field": "@timestamp",
+            "label": "Gün (yerel saat)",
+            "width": 18,
+            "format": "datetime"
+          },
+          {
+            "field": "namespace",
+            "label": "Namespace",
+            "width": 24,
+            "format": "text"
+          },
+          {
+            "field": "value",
+            "label": "CPU (çekirdek)",
+            "width": 12,
+            "format": "text"
+          }
+        ],
+        "row_rules": [],
+        "sort": [
+          {
+            "field": "@timestamp",
+            "dir": "asc"
+          },
+          {
+            "field": "value",
+            "dir": "desc"
+          }
+        ],
+        "meta": {
+          "title": "Namespace CPU Kullanımı (günlük ortalama, çekirdek) – Prod Cluster",
+          "scope": "Prod Cluster · Prometheus · cluster=\"prod\"",
+          "notes": [
+            [
+              "Kaynak",
+              "Prometheus · cluster=\"prod\""
+            ],
+            [
+              "Zaman",
+              "Her satır adım sonundaki değerdir; günlük raporlarda değer o tarihten önceki 24 saati, saatlik raporlarda önceki 1 saati kapsar."
+            ]
+          ]
+        },
+        "step": "1d",
+        "datasource": "Prometheus"
+      }
+    },
+    {
+      "slug": "prod-metrik-bellek",
+      "name": "Node Bellek Kullanımı (günlük ortalama %)",
+      "scope": "Prod Cluster",
+      "group": "Metrikler · Kapasite",
+      "definition": {
+        "description": "Her node'un gün içindeki ortalama bellek kullanım yüzdesi.",
+        "dataset": "100 * (1 - avg by (instance) (avg_over_time(node_memory_MemAvailable_bytes{cluster=\"prod\"}[1d]) / avg_over_time(node_memory_MemTotal_bytes{cluster=\"prod\"}[1d])))",
+        "time_field": "@timestamp",
+        "fixed_filters": [],
+        "params": [],
+        "columns": [
+          {
+            "field": "@timestamp",
+            "label": "Gün (yerel saat)",
+            "width": 18,
+            "format": "datetime"
+          },
+          {
+            "field": "instance",
+            "label": "Node",
+            "width": 22,
+            "format": "text"
+          },
+          {
+            "field": "value",
+            "label": "Bellek %",
+            "width": 10,
+            "format": "text"
+          }
+        ],
+        "row_rules": [],
+        "sort": [
+          {
+            "field": "@timestamp",
+            "dir": "asc"
+          },
+          {
+            "field": "value",
+            "dir": "desc"
+          }
+        ],
+        "meta": {
+          "title": "Node Bellek Kullanımı (günlük ortalama %) – Prod Cluster",
+          "scope": "Prod Cluster · Prometheus cluster=\"prod\"",
+          "notes": [
+            [
+              "Kaynak",
+              "Prometheus · cluster=\"prod\""
+            ],
+            [
+              "Zaman",
+              "Her satır adım sonundaki değerdir; günlük raporlarda değer o güne kadarki 24 saati kapsar."
+            ]
+          ]
+        },
+        "step": "1d",
+        "datasource": "Prometheus"
+      }
+    },
+    {
+      "slug": "prod-metrik-cpu",
+      "name": "Node CPU Kullanımı (günlük ortalama %)",
+      "scope": "Prod Cluster",
+      "group": "Metrikler · Kapasite",
+      "definition": {
+        "description": "Her node'un gün içindeki ortalama CPU kullanım yüzdesi.",
+        "dataset": "100 - 100 * avg by (instance) (rate(node_cpu_seconds_total{cluster=\"prod\",mode=\"idle\"}[1d]))",
+        "time_field": "@timestamp",
+        "fixed_filters": [],
+        "params": [],
+        "columns": [
+          {
+            "field": "@timestamp",
+            "label": "Gün (yerel saat)",
+            "width": 18,
+            "format": "datetime"
+          },
+          {
+            "field": "instance",
+            "label": "Node",
+            "width": 22,
+            "format": "text"
+          },
+          {
+            "field": "value",
+            "label": "CPU %",
+            "width": 10,
+            "format": "text"
+          }
+        ],
+        "row_rules": [],
+        "sort": [
+          {
+            "field": "@timestamp",
+            "dir": "asc"
+          },
+          {
+            "field": "value",
+            "dir": "desc"
+          }
+        ],
+        "meta": {
+          "title": "Node CPU Kullanımı (günlük ortalama %) – Prod Cluster",
+          "scope": "Prod Cluster · Prometheus cluster=\"prod\"",
+          "notes": [
+            [
+              "Kaynak",
+              "Prometheus · cluster=\"prod\""
+            ],
+            [
+              "Zaman",
+              "Her satır adım sonundaki değerdir; günlük raporlarda değer o güne kadarki 24 saati kapsar."
+            ]
+          ]
+        },
+        "step": "1d",
+        "datasource": "Prometheus"
+      }
+    },
+    {
+      "slug": "prod-metrik-disk-doluluk",
+      "name": "Node Disk Doluluğu (günlük en yüksek %)",
+      "scope": "Prod Cluster",
+      "group": "Metrikler · Kapasite",
+      "definition": {
+        "description": "Her node ve bağlama noktası için gün içindeki en yüksek disk doluluk yüzdesi.",
+        "dataset": "max by (instance, mountpoint) (max_over_time((100 - 100 * node_filesystem_avail_bytes{cluster=\"prod\",fstype!~\"tmpfs|overlay|squashfs|nsfs\"} / node_filesystem_size_bytes{cluster=\"prod\",fstype!~\"tmpfs|overlay|squashfs|nsfs\"})[1d:1h]))",
+        "time_field": "@timestamp",
+        "fixed_filters": [],
+        "params": [],
+        "columns": [
+          {
+            "field": "@timestamp",
+            "label": "Gün (yerel saat)",
+            "width": 18,
+            "format": "datetime"
+          },
+          {
+            "field": "instance",
+            "label": "Node",
+            "width": 22,
+            "format": "text"
+          },
+          {
+            "field": "mountpoint",
+            "label": "Bağlama noktası",
+            "width": 26,
+            "format": "text"
+          },
+          {
+            "field": "value",
+            "label": "Doluluk %",
+            "width": 10,
+            "format": "text"
+          }
+        ],
+        "row_rules": [],
+        "sort": [
+          {
+            "field": "@timestamp",
+            "dir": "asc"
+          },
+          {
+            "field": "value",
+            "dir": "desc"
+          }
+        ],
+        "meta": {
+          "title": "Node Disk Doluluğu (günlük en yüksek %) – Prod Cluster",
+          "scope": "Prod Cluster · Prometheus cluster=\"prod\"",
+          "notes": [
+            [
+              "Kaynak",
+              "Prometheus · cluster=\"prod\""
+            ],
+            [
+              "Zaman",
+              "Her satır adım sonundaki değerdir; günlük raporlarda değer o güne kadarki 24 saati kapsar."
+            ]
+          ]
+        },
+        "step": "1d",
+        "datasource": "Prometheus"
+      }
+    },
+    {
+      "slug": "prod-metrik-pvc",
+      "name": "PVC Doluluğu (günlük en yüksek %)",
+      "scope": "Prod Cluster",
+      "group": "Metrikler · Kapasite",
+      "definition": {
+        "description": "Her kalıcı diskin (PVC) gün içindeki en yüksek doluluk yüzdesi.",
+        "dataset": "max by (namespace, persistentvolumeclaim) (max_over_time((100 * kubelet_volume_stats_used_bytes{cluster=\"prod\"} / kubelet_volume_stats_capacity_bytes{cluster=\"prod\"})[1d:1h]))",
+        "time_field": "@timestamp",
+        "fixed_filters": [],
+        "params": [],
+        "columns": [
+          {
+            "field": "@timestamp",
+            "label": "Gün (yerel saat)",
+            "width": 18,
+            "format": "datetime"
+          },
+          {
+            "field": "namespace",
+            "label": "Namespace",
+            "width": 18,
+            "format": "text"
+          },
+          {
+            "field": "persistentvolumeclaim",
+            "label": "PVC",
+            "width": 44,
+            "format": "text"
+          },
+          {
+            "field": "value",
+            "label": "Doluluk %",
+            "width": 10,
+            "format": "text"
+          }
+        ],
+        "row_rules": [],
+        "sort": [
+          {
+            "field": "@timestamp",
+            "dir": "asc"
+          },
+          {
+            "field": "value",
+            "dir": "desc"
+          }
+        ],
+        "meta": {
+          "title": "PVC Doluluğu (günlük en yüksek %) – Prod Cluster",
+          "scope": "Prod Cluster · Prometheus · cluster=\"prod\"",
+          "notes": [
+            [
+              "Kaynak",
+              "Prometheus · cluster=\"prod\""
+            ],
+            [
+              "Zaman",
+              "Her satır adım sonundaki değerdir; günlük raporlarda değer o tarihten önceki 24 saati, saatlik raporlarda önceki 1 saati kapsar."
+            ]
+          ]
+        },
+        "step": "1d",
+        "datasource": "Prometheus"
+      }
+    },
+    {
+      "slug": "prod-metrik-job-hata",
+      "name": "Başarısız Job'lar (günlük)",
+      "scope": "Prod Cluster",
+      "group": "Metrikler · Sağlık",
+      "definition": {
+        "description": "Gün sonunda başarısız durumda olan Kubernetes Job'ları (CronJob çalıştırmaları dahil).",
+        "dataset": "sum by (namespace, job_name) (kube_job_status_failed{cluster=\"prod\"}) > 0",
+        "time_field": "@timestamp",
+        "fixed_filters": [],
+        "params": [],
+        "columns": [
+          {
+            "field": "@timestamp",
+            "label": "Gün (yerel saat)",
+            "width": 18,
+            "format": "datetime"
+          },
+          {
+            "field": "namespace",
+            "label": "Namespace",
+            "width": 18,
+            "format": "text"
+          },
+          {
+            "field": "job_name",
+            "label": "Job",
+            "width": 50,
+            "format": "text"
+          },
+          {
+            "field": "value",
+            "label": "Başarısız pod",
+            "width": 10,
+            "format": "text"
+          }
+        ],
+        "row_rules": [],
+        "sort": [
+          {
+            "field": "@timestamp",
+            "dir": "asc"
+          }
+        ],
+        "meta": {
+          "title": "Başarısız Job'lar (günlük) – Prod Cluster",
+          "scope": "Prod Cluster · Prometheus · cluster=\"prod\"",
+          "notes": [
+            [
+              "Kaynak",
+              "Prometheus · cluster=\"prod\""
+            ],
+            [
+              "Zaman",
+              "Her satır adım sonundaki değerdir; günlük raporlarda değer o tarihten önceki 24 saati, saatlik raporlarda önceki 1 saati kapsar."
+            ]
+          ]
+        },
+        "step": "1d",
+        "datasource": "Prometheus"
+      }
+    },
+    {
+      "slug": "prod-metrik-oom",
+      "name": "Bellek Yetersizliğinden Ölen Container'lar (OOMKilled, günlük)",
+      "scope": "Prod Cluster",
+      "group": "Metrikler · Sağlık",
+      "definition": {
+        "description": "Son sonlanma nedeni OOMKilled olan ve gün içinde yeniden başlayan container'lar.",
+        "dataset": "sum by (namespace, pod, container) (increase(kube_pod_container_status_restarts_total{cluster=\"prod\"}[1d]) * on (cluster, namespace, pod, container) group_left max by (cluster, namespace, pod, container) (kube_pod_container_status_last_terminated_reason{cluster=\"prod\",reason=\"OOMKilled\"})) > 0",
+        "time_field": "@timestamp",
+        "fixed_filters": [],
+        "params": [],
+        "columns": [
+          {
+            "field": "@timestamp",
+            "label": "Gün (yerel saat)",
+            "width": 18,
+            "format": "datetime"
+          },
+          {
+            "field": "namespace",
+            "label": "Namespace",
+            "width": 18,
+            "format": "text"
+          },
+          {
+            "field": "pod",
+            "label": "Pod",
+            "width": 44,
+            "format": "text"
+          },
+          {
+            "field": "container",
+            "label": "Container",
+            "width": 24,
+            "format": "text"
+          },
+          {
+            "field": "value",
+            "label": "Yeniden başlama",
+            "width": 12,
+            "format": "text"
+          }
+        ],
+        "row_rules": [],
+        "sort": [
+          {
+            "field": "@timestamp",
+            "dir": "asc"
+          }
+        ],
+        "meta": {
+          "title": "Bellek Yetersizliğinden Ölen Container'lar (OOMKilled, günlük) – Prod Cluster",
+          "scope": "Prod Cluster · Prometheus · cluster=\"prod\"",
+          "notes": [
+            [
+              "Kaynak",
+              "Prometheus · cluster=\"prod\""
+            ],
+            [
+              "Zaman",
+              "Her satır adım sonundaki değerdir; günlük raporlarda değer o tarihten önceki 24 saati, saatlik raporlarda önceki 1 saati kapsar."
+            ]
+          ]
+        },
+        "step": "1d",
+        "datasource": "Prometheus"
+      }
+    },
+    {
+      "slug": "prod-metrik-eksik-replika",
+      "name": "Eksik Replikalı Deployment'lar (saatlik)",
+      "scope": "Prod Cluster",
+      "group": "Metrikler · Sağlık",
+      "definition": {
+        "description": "İstenen replika sayısına ulaşamayan deployment'lar ve eksik replika sayısı.",
+        "dataset": "sum by (namespace, deployment) (kube_deployment_spec_replicas{cluster=\"prod\"} - kube_deployment_status_replicas_available{cluster=\"prod\"}) > 0",
+        "time_field": "@timestamp",
+        "fixed_filters": [],
+        "params": [],
+        "columns": [
+          {
+            "field": "@timestamp",
+            "label": "Saat (yerel saat)",
+            "width": 18,
+            "format": "datetime"
+          },
+          {
+            "field": "namespace",
+            "label": "Namespace",
+            "width": 18,
+            "format": "text"
+          },
+          {
+            "field": "deployment",
+            "label": "Deployment",
+            "width": 40,
+            "format": "text"
+          },
+          {
+            "field": "value",
+            "label": "Eksik replika",
+            "width": 12,
+            "format": "text"
+          }
+        ],
+        "row_rules": [],
+        "sort": [
+          {
+            "field": "@timestamp",
+            "dir": "asc"
+          }
+        ],
+        "meta": {
+          "title": "Eksik Replikalı Deployment'lar (saatlik) – Prod Cluster",
+          "scope": "Prod Cluster · Prometheus cluster=\"prod\"",
+          "notes": [
+            [
+              "Kaynak",
+              "Prometheus · cluster=\"prod\""
+            ],
+            [
+              "Zaman",
+              "Her satır adım sonundaki değerdir; günlük raporlarda değer o güne kadarki 24 saati kapsar."
+            ]
+          ]
+        },
+        "step": "1h",
+        "datasource": "Prometheus"
+      }
+    },
+    {
+      "slug": "prod-metrik-hedef-erisilemez",
+      "name": "Erişilemeyen Hedefler (saatlik)",
+      "scope": "Prod Cluster",
+      "group": "Metrikler · Sağlık",
+      "definition": {
+        "description": "Saat içinde en az bir kez erişilemeyen (up=0) Prometheus hedefleri: servis, exporter, pod.",
+        "dataset": "min by (job, instance) (min_over_time(up{cluster=\"prod\"}[1h])) == 0",
+        "time_field": "@timestamp",
+        "fixed_filters": [],
+        "params": [],
+        "columns": [
+          {
+            "field": "@timestamp",
+            "label": "Saat (yerel saat)",
+            "width": 18,
+            "format": "datetime"
+          },
+          {
+            "field": "job",
+            "label": "Hedef (job)",
+            "width": 36,
+            "format": "text"
+          },
+          {
+            "field": "instance",
+            "label": "Adres",
+            "width": 26,
+            "format": "text"
+          }
+        ],
+        "row_rules": [],
+        "sort": [
+          {
+            "field": "@timestamp",
+            "dir": "asc"
+          }
+        ],
+        "meta": {
+          "title": "Erişilemeyen Hedefler (saatlik) – Prod Cluster",
+          "scope": "Prod Cluster · Prometheus cluster=\"prod\"",
+          "notes": [
+            [
+              "Kaynak",
+              "Prometheus · cluster=\"prod\""
+            ],
+            [
+              "Zaman",
+              "Her satır adım sonundaki değerdir; günlük raporlarda değer o güne kadarki 24 saati kapsar."
+            ]
+          ]
+        },
+        "step": "1h",
+        "datasource": "Prometheus"
+      }
+    },
+    {
+      "slug": "prod-metrik-node-durum",
+      "name": "Node Sorunları (NotReady / Pressure, saatlik)",
+      "scope": "Prod Cluster",
+      "group": "Metrikler · Sağlık",
+      "definition": {
+        "description": "Hazır olmayan (NotReady) veya bellek / disk / PID baskısı altındaki node'lar.",
+        "dataset": "max by (node, condition) (kube_node_status_condition{cluster=\"prod\",condition=\"Ready\",status!=\"true\"} or kube_node_status_condition{cluster=\"prod\",condition=~\"MemoryPressure|DiskPressure|PIDPressure\",status=\"true\"}) > 0",
+        "time_field": "@timestamp",
+        "fixed_filters": [],
+        "params": [],
+        "columns": [
+          {
+            "field": "@timestamp",
+            "label": "Saat (yerel saat)",
+            "width": 18,
+            "format": "datetime"
+          },
+          {
+            "field": "node",
+            "label": "Node",
+            "width": 30,
+            "format": "text"
+          },
+          {
+            "field": "condition",
+            "label": "Durum",
+            "width": 18,
+            "format": "text"
+          }
+        ],
+        "row_rules": [],
+        "sort": [
+          {
+            "field": "@timestamp",
+            "dir": "asc"
+          }
+        ],
+        "meta": {
+          "title": "Node Sorunları (NotReady / Pressure, saatlik) – Prod Cluster",
+          "scope": "Prod Cluster · Prometheus · cluster=\"prod\"",
+          "notes": [
+            [
+              "Kaynak",
+              "Prometheus · cluster=\"prod\""
+            ],
+            [
+              "Zaman",
+              "Her satır adım sonundaki değerdir; günlük raporlarda değer o tarihten önceki 24 saati, saatlik raporlarda önceki 1 saati kapsar."
+            ]
+          ]
+        },
+        "step": "1h",
+        "datasource": "Prometheus"
+      }
+    },
+    {
+      "slug": "prod-metrik-node-reboot",
+      "name": "Node Yeniden Başlatmaları (günlük)",
+      "scope": "Prod Cluster",
+      "group": "Metrikler · Sağlık",
+      "definition": {
+        "description": "Gün içinde yeniden başlatılan (boot zamanı değişen) node'lar.",
+        "dataset": "changes(node_boot_time_seconds{cluster=\"prod\"}[1d]) > 0",
+        "time_field": "@timestamp",
+        "fixed_filters": [],
+        "params": [],
+        "columns": [
+          {
+            "field": "@timestamp",
+            "label": "Gün (yerel saat)",
+            "width": 18,
+            "format": "datetime"
+          },
+          {
+            "field": "instance",
+            "label": "Node",
+            "width": 24,
+            "format": "text"
+          },
+          {
+            "field": "value",
+            "label": "Yeniden başlatma",
+            "width": 12,
+            "format": "text"
+          }
+        ],
+        "row_rules": [],
+        "sort": [
+          {
+            "field": "@timestamp",
+            "dir": "asc"
+          }
+        ],
+        "meta": {
+          "title": "Node Yeniden Başlatmaları (günlük) – Prod Cluster",
+          "scope": "Prod Cluster · Prometheus · cluster=\"prod\"",
+          "notes": [
+            [
+              "Kaynak",
+              "Prometheus · cluster=\"prod\""
+            ],
+            [
+              "Zaman",
+              "Her satır adım sonundaki değerdir; günlük raporlarda değer o tarihten önceki 24 saati, saatlik raporlarda önceki 1 saati kapsar."
+            ]
+          ]
+        },
+        "step": "1d",
+        "datasource": "Prometheus"
+      }
+    },
+    {
+      "slug": "prod-metrik-pod-restart",
+      "name": "Pod Yeniden Başlatmaları (günlük)",
+      "scope": "Prod Cluster",
+      "group": "Metrikler · Sağlık",
+      "definition": {
+        "description": "Gün içinde yeniden başlayan pod'lar ve kaç kez yeniden başladıkları.",
+        "dataset": "sum by (namespace, pod) (increase(kube_pod_container_status_restarts_total{cluster=\"prod\"}[1d])) > 0",
+        "time_field": "@timestamp",
+        "fixed_filters": [],
+        "params": [],
+        "columns": [
+          {
+            "field": "@timestamp",
+            "label": "Gün (yerel saat)",
+            "width": 18,
+            "format": "datetime"
+          },
+          {
+            "field": "namespace",
+            "label": "Namespace",
+            "width": 18,
+            "format": "text"
+          },
+          {
+            "field": "pod",
+            "label": "Pod",
+            "width": 50,
+            "format": "text"
+          },
+          {
+            "field": "value",
+            "label": "Yeniden başlama",
+            "width": 14,
+            "format": "text"
+          }
+        ],
+        "row_rules": [],
+        "sort": [
+          {
+            "field": "@timestamp",
+            "dir": "asc"
+          },
+          {
+            "field": "value",
+            "dir": "desc"
+          }
+        ],
+        "meta": {
+          "title": "Pod Yeniden Başlatmaları (günlük) – Prod Cluster",
+          "scope": "Prod Cluster · Prometheus cluster=\"prod\"",
+          "notes": [
+            [
+              "Kaynak",
+              "Prometheus · cluster=\"prod\""
+            ],
+            [
+              "Zaman",
+              "Her satır adım sonundaki değerdir; günlük raporlarda değer o güne kadarki 24 saati kapsar."
+            ]
+          ]
+        },
+        "step": "1d",
+        "datasource": "Prometheus"
+      }
+    },
+    {
+      "slug": "prod-metrik-pod-faz",
+      "name": "Çalışmayan Pod'lar (Pending / Failed / Unknown, saatlik)",
+      "scope": "Prod Cluster",
+      "group": "Metrikler · Sağlık",
+      "definition": {
+        "description": "Saat başında Running/Succeeded dışındaki bir aşamada bulunan pod'lar.",
+        "dataset": "sum by (namespace, pod, phase) (kube_pod_status_phase{cluster=\"prod\",phase=~\"Pending|Failed|Unknown\"}) > 0",
+        "time_field": "@timestamp",
+        "fixed_filters": [],
+        "params": [],
+        "columns": [
+          {
+            "field": "@timestamp",
+            "label": "Saat (yerel saat)",
+            "width": 18,
+            "format": "datetime"
+          },
+          {
+            "field": "namespace",
+            "label": "Namespace",
+            "width": 18,
+            "format": "text"
+          },
+          {
+            "field": "pod",
+            "label": "Pod",
+            "width": 50,
+            "format": "text"
+          },
+          {
+            "field": "phase",
+            "label": "Aşama",
+            "width": 10,
+            "format": "text"
+          }
+        ],
+        "row_rules": [],
+        "sort": [
+          {
+            "field": "@timestamp",
+            "dir": "asc"
+          }
+        ],
+        "meta": {
+          "title": "Çalışmayan Pod'lar (Pending / Failed / Unknown, saatlik) – Prod Cluster",
+          "scope": "Prod Cluster · Prometheus · cluster=\"prod\"",
+          "notes": [
+            [
+              "Kaynak",
+              "Prometheus · cluster=\"prod\""
+            ],
+            [
+              "Zaman",
+              "Her satır adım sonundaki değerdir; günlük raporlarda değer o tarihten önceki 24 saati, saatlik raporlarda önceki 1 saati kapsar."
+            ]
+          ]
+        },
+        "step": "1h",
+        "datasource": "Prometheus"
+      }
+    },
+    {
+      "slug": "prod-metrik-yedek-yasi",
+      "name": "Son Başarılı Yedekten Geçen Süre (saat)",
+      "scope": "Prod Cluster",
+      "group": "Metrikler · Yedekleme",
+      "definition": {
+        "description": "Her gün itibarıyla, her yedekleme planının son başarılı yedeğinin üzerinden geçen saat. 24'ü aşan değerler kaçırılmış yedeği gösterir.",
+        "dataset": "(time() - max by (schedule) (velero_backup_last_successful_timestamp{cluster=\"prod\"})) / 3600",
+        "time_field": "@timestamp",
+        "fixed_filters": [],
+        "params": [],
+        "columns": [
+          {
+            "field": "@timestamp",
+            "label": "Gün (yerel saat)",
+            "width": 18,
+            "format": "datetime"
+          },
+          {
+            "field": "schedule",
+            "label": "Yedekleme planı",
+            "width": 34,
+            "format": "text"
+          },
+          {
+            "field": "value",
+            "label": "Geçen süre (saat)",
+            "width": 14,
+            "format": "text"
+          }
+        ],
+        "row_rules": [],
+        "sort": [
+          {
+            "field": "@timestamp",
+            "dir": "asc"
+          }
+        ],
+        "meta": {
+          "title": "Son Başarılı Yedekten Geçen Süre (saat) – Prod Cluster",
+          "scope": "Prod Cluster · Prometheus · cluster=\"prod\"",
+          "notes": [
+            [
+              "Kaynak",
+              "Prometheus · cluster=\"prod\""
+            ],
+            [
+              "Zaman",
+              "Her satır adım sonundaki değerdir; günlük raporlarda değer o tarihten önceki 24 saati, saatlik raporlarda önceki 1 saati kapsar."
+            ]
+          ]
+        },
+        "step": "1d",
+        "datasource": "Prometheus"
+      }
+    },
+    {
+      "slug": "prod-metrik-yedek-sonuclari",
+      "name": "Velero Yedekleme Sonuçları (günlük)",
+      "scope": "Prod Cluster",
+      "group": "Metrikler · Yedekleme",
+      "definition": {
+        "description": "Her yedekleme planı için gün içinde başarılı ve başarısız yedek sayısı.",
+        "dataset": "label_replace(sum by (schedule) (increase(velero_backup_success_total{cluster=\"prod\"}[1d])), \"sonuc\", \"başarılı\", \"\", \"\") or label_replace(sum by (schedule) (increase(velero_backup_failure_total{cluster=\"prod\"}[1d])), \"sonuc\", \"başarısız\", \"\", \"\")",
+        "time_field": "@timestamp",
+        "fixed_filters": [
+          {
+            "field": "value",
+            "op": "gt",
+            "value": 0.5
+          }
+        ],
+        "params": [],
+        "columns": [
+          {
+            "field": "@timestamp",
+            "label": "Gün (yerel saat)",
+            "width": 18,
+            "format": "datetime"
+          },
+          {
+            "field": "schedule",
+            "label": "Yedekleme planı",
+            "width": 34,
+            "format": "text"
+          },
+          {
+            "field": "sonuc",
+            "label": "Sonuç",
+            "width": 12,
+            "format": "text"
+          },
+          {
+            "field": "value",
+            "label": "Adet",
+            "width": 8,
+            "format": "text"
+          }
+        ],
+        "row_rules": [],
+        "sort": [
+          {
+            "field": "@timestamp",
+            "dir": "asc"
+          }
+        ],
+        "meta": {
+          "title": "Velero Yedekleme Sonuçları (günlük) – Prod Cluster",
+          "scope": "Prod Cluster · Prometheus · cluster=\"prod\"",
+          "notes": [
+            [
+              "Kaynak",
+              "Prometheus · cluster=\"prod\""
+            ],
+            [
+              "Zaman",
+              "Her satır adım sonundaki değerdir; günlük raporlarda değer o tarihten önceki 24 saati, saatlik raporlarda önceki 1 saati kapsar."
+            ]
+          ]
+        },
+        "step": "1d",
+        "datasource": "Prometheus"
+      }
+    }
+  ]
+}

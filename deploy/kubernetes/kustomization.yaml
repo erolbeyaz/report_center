@@ -1,0 +1,10 @@
+# Genel taban. Kendi ortamınız için bu dizini resource olarak kullanan bir overlay yazın
+# (imaj: images → name: rapor-merkezi, host, ortam değişkenleri, ConfigMap'ler). Ayrıntı: README.md
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+labels:
+  - pairs: {app.kubernetes.io/part-of: rapor-merkezi}
+resources:
+  - postgres.yaml
+  - app.yaml
+  - networkpolicy.yaml

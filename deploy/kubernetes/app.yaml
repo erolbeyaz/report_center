@@ -1,0 +1,109 @@
+# Excel dosyaları (export arşivi). Export geçmişi denetim kaydıdır: silinmesin.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: rapor-merkezi-data
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests: {storage: 5Gi}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rapor-merkezi
+  labels: {app.kubernetes.io/name: rapor-merkezi}
+spec:
+  replicas: 1                 # RWO disk + süreç içi Ana Sayfa önbelleği: tek replika
+  strategy: {type: Recreate}  # eski pod diski bırakmadan yenisi başlamasın
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels: {app.kubernetes.io/name: rapor-merkezi}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: rapor-merkezi}
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: app
+          image: rapor-merkezi        # kustomization.yaml → images
+          ports:
+            - {name: http, containerPort: 8000}
+          env:
+            - {name: RM_DATABASE_URL, value: "postgresql+psycopg://rapor@rapor-merkezi-db:5432/rapor"}
+            - {name: RM_DATABASE_PASSWORD_FILE, value: /etc/rapor-merkezi/db-password}
+            - {name: RM_SESSION_SECRET_FILE, value: /etc/rapor-merkezi/session-secret}
+            - {name: RM_OIDC_CLIENT_SECRET_FILE, value: /etc/rapor-merkezi/oidc-client-secret}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          resources:
+            requests: {cpu: 100m, memory: 256Mi}
+            limits: {memory: 1Gi}     # büyük export'lar bellekte üretilir
+          startupProbe:
+            httpGet: {path: /healthz, port: http}
+            periodSeconds: 3
+            failureThreshold: 60
+          readinessProbe:
+            httpGet: {path: /healthz, port: http}
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: {path: /healthz, port: http}
+            periodSeconds: 20
+            timeoutSeconds: 3
+          volumeMounts:
+            - {name: data, mountPath: /data}
+            - {name: config, mountPath: /config, readOnly: true}
+            - {name: secrets, mountPath: /etc/rapor-merkezi, readOnly: true}
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - name: data
+          persistentVolumeClaim: {claimName: rapor-merkezi-data}
+        - name: tmp
+          emptyDir: {sizeLimit: 512Mi}
+        - name: config        # isteğe bağlı: bootstrap ve sağlık kontrolü JSON'ları
+          configMap: {name: rapor-merkezi-config, optional: true}
+        - name: secrets       # RM_SECRETS_DIR: CA sertifikaları ve kimlik bilgileri tek dizinde
+          projected:
+            defaultMode: 0440
+            sources:
+              - secret:
+                  name: rapor-merkezi-db
+                  items: [{key: password, path: db-password}]
+              - secret: {name: rapor-merkezi-app, optional: true}     # session-secret, oidc-client-secret, veri kaynağı cred dosyaları
+              - configMap: {name: rapor-merkezi-ca, optional: true}   # CA sertifikaları
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rapor-merkezi
+  labels: {app.kubernetes.io/name: rapor-merkezi}
+spec:
+  selector: {app.kubernetes.io/name: rapor-merkezi}
+  ports:
+    - {name: http, port: 80, targetPort: http}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: rapor-merkezi
+spec:
+  tls:
+    - hosts: [rapor.example.com]
+  rules:
+    - host: rapor.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service: {name: rapor-merkezi, port: {name: http}}

@@ -1,0 +1,622 @@
+{
+  "format": 1,
+  "datasources": [
+    {
+      "name": "Demo PostgreSQL",
+      "type": "postgresql",
+      "config": {
+        "host": "db",
+        "port": "5432",
+        "database": "demo",
+        "cred_file": "demo-cred",
+        "sslmode": "disable",
+        "timezone": "UTC"
+      }
+    }
+  ],
+  "scopes": [
+    {
+      "name": "Production",
+      "kind": "application",
+      "description": "Business applications (demo)"
+    },
+    {
+      "name": "Infrastructure",
+      "kind": "server",
+      "description": "Servers and backups (demo)"
+    }
+  ],
+  "templates": [
+    {
+      "slug": "demo-access-log",
+      "name": "User Access Log",
+      "scope": "Production",
+      "group": "Security · Access",
+      "definition": {
+        "description": "Every sign-in, sign-out and privileged action on business applications, with source IP and result.",
+        "dataset": "audit.access_log",
+        "time_field": "event_time",
+        "fixed_filters": [],
+        "params": [
+          {
+            "field": "application",
+            "label": "Application",
+            "options": [
+              "Admin Console",
+              "Customer Portal",
+              "Data Warehouse",
+              "HR System",
+              "Payments API"
+            ]
+          },
+          {
+            "field": "result",
+            "label": "Result",
+            "options": [
+              "SUCCESS",
+              "FAILED"
+            ]
+          }
+        ],
+        "columns": [
+          {
+            "field": "event_time",
+            "label": "Time",
+            "width": 22,
+            "format": "datetime"
+          },
+          {
+            "field": "username",
+            "label": "User",
+            "width": 14,
+            "format": "mono"
+          },
+          {
+            "field": "application",
+            "label": "Application",
+            "width": 18,
+            "format": "text"
+          },
+          {
+            "field": "action",
+            "label": "Action",
+            "width": 20,
+            "format": "badge"
+          },
+          {
+            "field": "source_ip",
+            "label": "Source IP",
+            "width": 18,
+            "format": "mono"
+          },
+          {
+            "field": "result",
+            "label": "Result",
+            "width": 20,
+            "format": "badge"
+          }
+        ],
+        "row_rules": [
+          {
+            "field": "result",
+            "equals": "FAILED",
+            "fill": "FCE4D6"
+          }
+        ],
+        "sort": [
+          {
+            "field": "event_time",
+            "dir": "desc"
+          }
+        ],
+        "meta": {
+          "title": "User Access Log – Production",
+          "scope": "Production · Demo PostgreSQL",
+          "notes": [
+            [
+              "Source",
+              "Demo PostgreSQL · audit.access_log"
+            ]
+          ]
+        },
+        "datasource": "Demo PostgreSQL"
+      }
+    },
+    {
+      "slug": "demo-failed-logins",
+      "name": "Failed Sign-ins",
+      "scope": "Production",
+      "group": "Security · Access",
+      "definition": {
+        "description": "Unsuccessful sign-in attempts. Repeated failures from one IP may indicate password guessing.",
+        "dataset": "audit.access_log",
+        "time_field": "event_time",
+        "fixed_filters": [
+          {
+            "field": "action",
+            "op": "eq",
+            "value": "LOGIN"
+          },
+          {
+            "field": "result",
+            "op": "eq",
+            "value": "FAILED"
+          }
+        ],
+        "params": [
+          {
+            "field": "application",
+            "label": "Application",
+            "options": [
+              "Admin Console",
+              "Customer Portal",
+              "Data Warehouse",
+              "HR System",
+              "Payments API"
+            ]
+          }
+        ],
+        "columns": [
+          {
+            "field": "event_time",
+            "label": "Time",
+            "width": 22,
+            "format": "datetime"
+          },
+          {
+            "field": "username",
+            "label": "User",
+            "width": 14,
+            "format": "mono"
+          },
+          {
+            "field": "application",
+            "label": "Application",
+            "width": 18,
+            "format": "text"
+          },
+          {
+            "field": "action",
+            "label": "Action",
+            "width": 20,
+            "format": "badge"
+          },
+          {
+            "field": "source_ip",
+            "label": "Source IP",
+            "width": 18,
+            "format": "mono"
+          },
+          {
+            "field": "result",
+            "label": "Result",
+            "width": 20,
+            "format": "badge"
+          }
+        ],
+        "row_rules": [],
+        "sort": [
+          {
+            "field": "event_time",
+            "dir": "desc"
+          }
+        ],
+        "meta": {
+          "title": "Failed Sign-ins – Production",
+          "scope": "Production · Demo PostgreSQL",
+          "notes": [
+            [
+              "Source",
+              "Demo PostgreSQL · audit.access_log"
+            ]
+          ]
+        },
+        "datasource": "Demo PostgreSQL"
+      }
+    },
+    {
+      "slug": "demo-privileged-actions",
+      "name": "Privileged Actions",
+      "scope": "Production",
+      "group": "Security · Access",
+      "definition": {
+        "description": "Role grants, password changes and data exports.",
+        "dataset": "audit.access_log",
+        "time_field": "event_time",
+        "fixed_filters": [
+          {
+            "field": "action",
+            "op": "in",
+            "value": [
+              "ROLE_GRANT",
+              "PASSWORD_CHANGE",
+              "EXPORT"
+            ]
+          }
+        ],
+        "params": [],
+        "columns": [
+          {
+            "field": "event_time",
+            "label": "Time",
+            "width": 22,
+            "format": "datetime"
+          },
+          {
+            "field": "username",
+            "label": "User",
+            "width": 14,
+            "format": "mono"
+          },
+          {
+            "field": "application",
+            "label": "Application",
+            "width": 18,
+            "format": "text"
+          },
+          {
+            "field": "action",
+            "label": "Action",
+            "width": 20,
+            "format": "badge"
+          },
+          {
+            "field": "source_ip",
+            "label": "Source IP",
+            "width": 18,
+            "format": "mono"
+          },
+          {
+            "field": "result",
+            "label": "Result",
+            "width": 20,
+            "format": "badge"
+          }
+        ],
+        "row_rules": [
+          {
+            "field": "action",
+            "equals": "ROLE_GRANT",
+            "fill": "EEE8F7"
+          }
+        ],
+        "sort": [
+          {
+            "field": "event_time",
+            "dir": "desc"
+          }
+        ],
+        "meta": {
+          "title": "Privileged Actions – Production",
+          "scope": "Production · Demo PostgreSQL",
+          "notes": [
+            [
+              "Source",
+              "Demo PostgreSQL · audit.access_log"
+            ]
+          ]
+        },
+        "datasource": "Demo PostgreSQL"
+      }
+    },
+    {
+      "slug": "demo-change-log",
+      "name": "Change Log",
+      "scope": "Production",
+      "group": "Change Management",
+      "definition": {
+        "description": "All production changes with ticket and approver. Emergency changes and rollbacks are highlighted.",
+        "dataset": "audit.change_log",
+        "time_field": "changed_at",
+        "fixed_filters": [],
+        "params": [
+          {
+            "field": "system",
+            "label": "System",
+            "options": [
+              "firewall-edge",
+              "k8s-prod",
+              "ldap",
+              "payments-db",
+              "portal-web"
+            ]
+          }
+        ],
+        "columns": [
+          {
+            "field": "changed_at",
+            "label": "Time",
+            "width": 22,
+            "format": "datetime"
+          },
+          {
+            "field": "ticket",
+            "label": "Ticket",
+            "width": 12,
+            "format": "mono"
+          },
+          {
+            "field": "system",
+            "label": "System",
+            "width": 16,
+            "format": "text"
+          },
+          {
+            "field": "change_type",
+            "label": "Type",
+            "width": 20,
+            "format": "badge"
+          },
+          {
+            "field": "summary",
+            "label": "Summary",
+            "width": 28,
+            "format": "text"
+          },
+          {
+            "field": "changed_by",
+            "label": "Changed by",
+            "width": 12,
+            "format": "mono"
+          },
+          {
+            "field": "approved_by",
+            "label": "Approved by",
+            "width": 12,
+            "format": "mono"
+          }
+        ],
+        "row_rules": [
+          {
+            "field": "change_type",
+            "equals": "emergency",
+            "fill": "FCE4D6"
+          },
+          {
+            "field": "change_type",
+            "equals": "rollback",
+            "fill": "EEE8F7"
+          }
+        ],
+        "sort": [
+          {
+            "field": "changed_at",
+            "dir": "desc"
+          }
+        ],
+        "meta": {
+          "title": "Change Log – Production",
+          "scope": "Production · Demo PostgreSQL",
+          "notes": [
+            [
+              "Source",
+              "Demo PostgreSQL · audit.change_log"
+            ]
+          ]
+        },
+        "datasource": "Demo PostgreSQL"
+      }
+    },
+    {
+      "slug": "demo-unapproved-emergency",
+      "name": "Unapproved Emergency Changes",
+      "scope": "Production",
+      "group": "Change Management",
+      "definition": {
+        "description": "Emergency changes that have no recorded approver yet.",
+        "dataset": "audit.change_log",
+        "time_field": "changed_at",
+        "fixed_filters": [
+          {
+            "field": "change_type",
+            "op": "eq",
+            "value": "emergency"
+          },
+          {
+            "field": "approved_by",
+            "op": "not_exists",
+            "value": null
+          }
+        ],
+        "params": [],
+        "columns": [
+          {
+            "field": "changed_at",
+            "label": "Time",
+            "width": 22,
+            "format": "datetime"
+          },
+          {
+            "field": "ticket",
+            "label": "Ticket",
+            "width": 12,
+            "format": "mono"
+          },
+          {
+            "field": "system",
+            "label": "System",
+            "width": 16,
+            "format": "text"
+          },
+          {
+            "field": "summary",
+            "label": "Summary",
+            "width": 28,
+            "format": "text"
+          },
+          {
+            "field": "changed_by",
+            "label": "Changed by",
+            "width": 12,
+            "format": "mono"
+          }
+        ],
+        "row_rules": [],
+        "sort": [
+          {
+            "field": "changed_at",
+            "dir": "desc"
+          }
+        ],
+        "meta": {
+          "title": "Unapproved Emergency Changes – Production",
+          "scope": "Production · Demo PostgreSQL",
+          "notes": [
+            [
+              "Source",
+              "Demo PostgreSQL · audit.change_log"
+            ]
+          ]
+        },
+        "datasource": "Demo PostgreSQL"
+      }
+    },
+    {
+      "slug": "demo-backup-jobs",
+      "name": "Backup Jobs",
+      "scope": "Infrastructure",
+      "group": "Operations · Backup",
+      "definition": {
+        "description": "Nightly backup runs with duration and size. Failed and partial runs are highlighted.",
+        "dataset": "ops.backup_jobs",
+        "time_field": "started_at",
+        "fixed_filters": [],
+        "params": [
+          {
+            "field": "status",
+            "label": "Status",
+            "options": [
+              "COMPLETED",
+              "PARTIAL",
+              "FAILED"
+            ]
+          }
+        ],
+        "columns": [
+          {
+            "field": "started_at",
+            "label": "Started",
+            "width": 22,
+            "format": "datetime"
+          },
+          {
+            "field": "job",
+            "label": "Job",
+            "width": 20,
+            "format": "mono"
+          },
+          {
+            "field": "target",
+            "label": "Target",
+            "width": 14,
+            "format": "text"
+          },
+          {
+            "field": "status",
+            "label": "Status",
+            "width": 20,
+            "format": "badge"
+          },
+          {
+            "field": "duration_min",
+            "label": "Duration (min)",
+            "width": 12,
+            "format": "text"
+          },
+          {
+            "field": "size_gb",
+            "label": "Size (GB)",
+            "width": 10,
+            "format": "text"
+          }
+        ],
+        "row_rules": [
+          {
+            "field": "status",
+            "equals": "FAILED",
+            "fill": "FCE4D6"
+          },
+          {
+            "field": "status",
+            "equals": "PARTIAL",
+            "fill": "FFF2CC"
+          }
+        ],
+        "sort": [
+          {
+            "field": "started_at",
+            "dir": "desc"
+          }
+        ],
+        "meta": {
+          "title": "Backup Jobs – Infrastructure",
+          "scope": "Infrastructure · Demo PostgreSQL",
+          "notes": [
+            [
+              "Source",
+              "Demo PostgreSQL · ops.backup_jobs"
+            ]
+          ]
+        },
+        "datasource": "Demo PostgreSQL"
+      }
+    },
+    {
+      "slug": "demo-daily-logins",
+      "name": "Daily Sign-ins per User",
+      "scope": "Production",
+      "group": "Security · Access",
+      "definition": {
+        "description": "Custom SQL report: sign-ins and failures per user per day.",
+        "dataset": "SELECT date_trunc('day', event_time) AS day, username,\n       count(*) AS sign_ins,\n       sum(CASE WHEN result = 'FAILED' THEN 1 ELSE 0 END) AS failed\nFROM audit.access_log\nWHERE action = 'LOGIN'\nGROUP BY 1, 2",
+        "time_field": "day",
+        "fixed_filters": [],
+        "params": [],
+        "columns": [
+          {
+            "field": "day",
+            "label": "Day",
+            "width": 22,
+            "format": "datetime"
+          },
+          {
+            "field": "username",
+            "label": "User",
+            "width": 14,
+            "format": "mono"
+          },
+          {
+            "field": "sign_ins",
+            "label": "Sign-ins",
+            "width": 10,
+            "format": "text"
+          },
+          {
+            "field": "failed",
+            "label": "Failed",
+            "width": 10,
+            "format": "text"
+          }
+        ],
+        "row_rules": [],
+        "sort": [
+          {
+            "field": "day",
+            "dir": "desc"
+          }
+        ],
+        "meta": {
+          "title": "Daily Sign-ins per User – Production",
+          "scope": "Production · Demo PostgreSQL",
+          "notes": [
+            [
+              "Source",
+              "Demo PostgreSQL · custom SQL"
+            ]
+          ]
+        },
+        "datasource": "Demo PostgreSQL"
+      }
+    }
+  ]
+}

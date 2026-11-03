@@ -1,0 +1,36 @@
+# Report Center demo: the app, its PostgreSQL database and a sample data source with synthetic audit data.
+#   docker compose up --build    →  http://localhost:8000  (admin / admin, then set a new password)
+#   Another port: PORT=8080 docker compose up --build
+# For demonstration only: passwords below are not secrets.
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: rapor
+      POSTGRES_USER: rapor
+      POSTGRES_PASSWORD: demo-app-password
+    volumes:
+      - ./seed.sql:/docker-entrypoint-initdb.d/seed.sql:ro
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "rapor", "-d", "demo"]
+      interval: 3s
+      retries: 20
+
+  app:
+    build: ../..
+    image: rapor-merkezi:demo
+    depends_on:
+      db: {condition: service_healthy}
+    ports: ["${PORT:-8000}:8000"]
+    environment:
+      RM_DATABASE_URL: postgresql+psycopg://rapor@db:5432/rapor
+      RM_DATABASE_PASSWORD: demo-app-password
+      RM_BOOTSTRAP_FILE: /demo/bootstrap.json
+      RM_TIMEZONE: UTC
+    volumes:
+      - ./bootstrap.json:/demo/bootstrap.json:ro
+      - ./secrets:/etc/rapor-merkezi:ro
+      - data:/data
+
+volumes:
+  data:

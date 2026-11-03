@@ -1,0 +1,37 @@
+# Veritabanına yalnız uygulama erişir. Uygulama: gelen yalnız ingress controller'dan (overlay'de namespace'i verin),
+# giden DNS, veritabanı ve veri kaynakları (HTTPS, ES, PostgreSQL, SQL Server) ile OIDC sağlayıcısı.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: rapor-merkezi-db
+spec:
+  podSelector:
+    matchLabels: {app.kubernetes.io/name: rapor-merkezi-db}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels: {app.kubernetes.io/name: rapor-merkezi}
+      ports: [{port: 5432}]
+  egress: []
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: rapor-merkezi
+spec:
+  podSelector:
+    matchLabels: {app.kubernetes.io/name: rapor-merkezi}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels: {kubernetes.io/metadata.name: ingress-nginx}
+      ports: [{port: 8000}]
+  egress:
+    - ports: [{port: 53, protocol: UDP}, {port: 53, protocol: TCP}]
+    - to:
+        - podSelector:
+            matchLabels: {app.kubernetes.io/name: rapor-merkezi-db}
+      ports: [{port: 5432}]
+    - ports: [{port: 443}, {port: 9200}, {port: 5432}, {port: 1433}]   # HTTPS, ES, PostgreSQL ve SQL Server veri kaynakları
